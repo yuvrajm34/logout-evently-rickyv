@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
     tools:context=".ui.organizer.CreateEventFragment">
@@ -13,16 +14,6 @@
         android:orientation="vertical"
         android:paddingTop="12dp"
         android:paddingBottom="16dp">
-
-        <!-- Title -->
-        <TextView
-            android:id="@+id/tvCreateTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Create Event"
-            android:textStyle="bold"
-            android:textSize="26sp"
-            android:paddingBottom="8dp"/>
 
         <!-- Poster row -->
         <LinearLayout
@@ -120,43 +111,83 @@
             android:padding="10dp"
             android:background="@android:drawable/edit_text" />
 
-        <!-- Registration Deadline: Date + Time in one row -->
+        <!-- Selection Deadline -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
-            android:text="Registration Deadline:"/>
+            android:text="Selection Deadline:" />
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSelectionDeadline"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:endIconMode="none">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSelectionDeadline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="false"
+                android:hint="YYYY/MM/DD"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Event Deadline -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:text="Event Deadline:" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:weightSum="2"
-            android:paddingTop="4dp">
+            android:paddingTop="4dp"
+            android:weightSum="2">
 
-            <EditText
-                android:id="@+id/etRegDate"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilEventDate"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="YYYY-MM-DD (e.g., 2025-01-01)"
-                android:inputType="date"
-                android:padding="10dp"
-                android:background="@android:drawable/edit_text" />
+                app:endIconMode="none">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEventDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="false"
+                    android:hint="YYYY/MM/DD"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <View
                 android:layout_width="8dp"
                 android:layout_height="wrap_content" />
 
-            <EditText
-                android:id="@+id/etRegTime"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilEventTime"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="HH:mm:ss (e.g., 21:10:00)"
-                android:inputType="time"
-                android:padding="10dp"
-                android:background="@android:drawable/edit_text" />
+                app:endIconMode="none">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEventTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="false"
+                    android:hint="HH:mm"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
         <!-- Footer buttons -->

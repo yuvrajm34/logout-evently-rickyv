@@ -5,7 +5,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import android.net.Uri;
@@ -26,6 +28,9 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.bumptech.glide.Glide;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 import com.google.firebase.Timestamp;
 
 import com.example.evently.R;
@@ -47,6 +52,11 @@ import com.example.evently.utils.FirebaseAuthUtils;
  */
 public class CreateEventFragment extends Fragment {
 
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy/MM/dd");
+    private static final DateTimeFormatter TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm");
+
     private FragmentCreateEventBinding binding;
 
     private Uri imageUri;
@@ -64,6 +74,11 @@ public class CreateEventFragment extends Fragment {
                     Log.d("Poster Picker", "No poster selected");
                 }
             });
+
+    @Nullable private LocalDate selectionDeadline;
+    @Nullable private LocalDate eventDate;
+    @Nullable private LocalTime eventTime;
+
 
     /**
      * Inflates the "Create Event" form
@@ -112,12 +127,15 @@ public class CreateEventFragment extends Fragment {
                     .build());
         });
 
+        setupSelectionDeadlinePicker();
+        setupEventDatePicker();
+        setupEventTimePicker();
+
         btnCreate.setOnClickListener(_x -> {
             String name = binding.etEventName.getText().toString().trim();
             String desc = binding.etDescription.getText().toString().trim();
             String winnersStr = binding.etWinners.getText().toString().trim();
-            String dateStr = binding.etRegDate.getText().toString().trim();
-            String timeStr = binding.etRegTime.getText().toString().trim();
+
 
             if (TextUtils.isEmpty(name)) {
                 toast("Please enter an event name.");
@@ -127,8 +145,13 @@ public class CreateEventFragment extends Fragment {
                 toast("Please enter number of winners.");
                 return;
             }
-            if (TextUtils.isEmpty(dateStr) || TextUtils.isEmpty(timeStr)) {
-                toast("Please enter deadline date and time.");
+            if (selectionDeadline == null) {
+                toast("Please select a selection deadline date.");
+                return;
+            }
+
+            if (eventDate == null || eventTime == null) {
+                toast("Please select an event date and time.");
                 return;
             }
 
@@ -151,13 +174,15 @@ public class CreateEventFragment extends Fragment {
                 }
             }
 
-            Instant selectionTime;
-            try {
-                LocalDate d = LocalDate.parse(dateStr); // YYYY-MM-DD
-                LocalTime t = LocalTime.parse(timeStr); // HH:mm:ss
-                selectionTime = LocalDateTime.of(d, t).toInstant(ZoneOffset.UTC);
-            } catch (Exception ex) {
-                toast("Invalid date/time. Use YYYY-MM-DD and HH:mm:ss");
+            final Instant selectionTime = selectionDeadline
+                    .atStartOfDay(ZoneId.systemDefault())
+                    .toInstant();
+            final Instant eventInstant = LocalDateTime.of(eventDate, eventTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant();
+
+            if (!eventInstant.isAfter(selectionTime)) {
+                toast("Event time must be after the selection deadline.");
                 return;
             }
 
@@ -170,7 +195,7 @@ public class CreateEventFragment extends Fragment {
                     desc,
                     Category.SPORTS,
                     new Timestamp(selectionTime),
-                    new Timestamp(selectionTime.plus(Duration.ofDays(2))),
+                    new Timestamp(eventInstant),
                     FirebaseAuthUtils.getCurrentEmail(),
                     winners);
 
@@ -197,11 +222,100 @@ public class CreateEventFragment extends Fragment {
         });
     }
 
+    private void setupSelectionDeadlinePicker() {
+        final View.OnClickListener listener = _v -> {
+            final var pickerBuilder = MaterialDatePicker.Builder.datePicker();
+            pickerBuilder.setTitleText("Select selection deadline");
+
+            if (selectionDeadline != null) {
+                pickerBuilder.setSelection(toEpochMillis(selectionDeadline));
+            }
+
+            final var picker = pickerBuilder.build();
+            picker.addOnPositiveButtonClickListener(selection -> {
+                if (selection != null) {
+                    selectionDeadline = toLocalDate(selection);
+                    binding.etSelectionDeadline.setText(
+                            DATE_FORMATTER.format(selectionDeadline));
+                }
+            });
+
+            picker.show(getParentFragmentManager(), "selection_deadline_picker");
+        };
+
+        binding.tilSelectionDeadline.setOnClickListener(listener);
+        binding.etSelectionDeadline.setOnClickListener(listener);
+    }
+
+    private void setupEventDatePicker() {
+        final View.OnClickListener listener = _v -> {
+            final var pickerBuilder = MaterialDatePicker.Builder.datePicker();
+            pickerBuilder.setTitleText("Select event date");
+
+            if (eventDate != null) {
+                pickerBuilder.setSelection(toEpochMillis(eventDate));
+            }
+
+            final var picker = pickerBuilder.build();
+            picker.addOnPositiveButtonClickListener(selection -> {
+                if (selection != null) {
+                    eventDate = toLocalDate(selection);
+                    binding.etEventDate.setText(DATE_FORMATTER.format(eventDate));
+                }
+            });
+
+            picker.show(getParentFragmentManager(), "event_date_picker");
+        };
+
+        binding.tilEventDate.setOnClickListener(listener);
+        binding.etEventDate.setOnClickListener(listener);
+    }
+
+    private void setupEventTimePicker() {
+        final View.OnClickListener listener = _v -> {
+            final var builder = new MaterialTimePicker.Builder()
+                    .setTimeFormat(TimeFormat.CLOCK_24H);
+
+            if (eventTime != null) {
+                builder.setHour(eventTime.getHour());
+                builder.setMinute(eventTime.getMinute());
+            }
+
+            final var picker = builder.build();
+            picker.addOnPositiveButtonClickListener(_selection -> {
+                eventTime = LocalTime.of(picker.getHour(), picker.getMinute());
+                binding.etEventTime.setText(TIME_FORMATTER.format(eventTime));
+            });
+
+            picker.show(getParentFragmentManager(), "event_time_picker");
+        };
+
+        binding.tilEventTime.setOnClickListener(listener);
+        binding.etEventTime.setOnClickListener(listener);
+    }
+
+    private LocalDate toLocalDate(long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+
+    private long toEpochMillis(LocalDate date) {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+
     /**
      * Shows a short-length {@link Toast} with the given message in this Fragment's context
      * @param msg message to display to the user
      */
     private void toast(String msg) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 }
